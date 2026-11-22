@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selamat Ulang Tahun! 🎉</title>
+    
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Memuat Google Fonts (Playfair Display untuk judul estetik & Plus Jakarta Sans untuk teks) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Memuat Canvas Confetti untuk efek meriah -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- Memuat Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Pengaturan Font Kustom & Tema Warna Hijau Estetik */
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #ecfdf5 100%);
+            overflow-x: hidden;
+        }
+        .font-serif-title {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Animasi Balon Melayang di Latar Belakang */
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-20vh) rotate(20deg);
+                opacity: 0;
+            }
+        }
+        .balloon {
+            position: fixed;
+            bottom: -100px;
+            z-index: 0;
+            pointer-events: none;
+            animation: floatUp linear infinite;
+        }
+
+        /* Animasi Api Lilin Kue Ulang Tahun */
+        @keyframes flicker {
+            0%, 100% { transform: scale(1) rotate(-2deg); opacity: 1; }
+            25% { transform: scale(1.05) rotate(2deg); opacity: 0.9; }
+            50% { transform: scale(0.95) rotate(-1deg); opacity: 1; }
+            75% { transform: scale(1.03) rotate(1deg); opacity: 0.85; }
+        }
+        .flame {
+            animation: flicker 1.2s infinite ease-in-out;
+            transform-origin: bottom center;
+        }
+
+        /* Animasi Gelombang Musik (Equalizer) */
+        @keyframes equalize {
+            0%, 100% { height: 6px; }
+            50% { height: 18px; }
+        }
+        .eq-bar {
+            animation: equalize 0.8s infinite ease-in-out;
+        }
+        .eq-bar:nth-child(2) { animation-delay: 0.2s; }
+        .eq-bar:nth-child(3) { animation-delay: 0.4s; }
+        .paused .eq-bar {
+            animation-play-state: paused;
+            height: 6px !important;
+        }
+
+        /* Kursor Efek Ketik (Typewriter) */
+        .typing-cursor::after {
+            content: '|';
+            animation: blink 1s infinite;
+            color: #059669;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased selection:bg-emerald-200 selection:text-emerald-950">
+
+    <!-- =========================================================================
+         PANDUAN KUSTOMISASI FILE LOKAL (FOTO, AUDIO, VIDEO)
+         =========================================================================
+         Agar file foto, lagu (.mp3), dan video (.mp4) milikmu sendiri muncul:
+         1. Simpan file HTML ini di dalam satu folder (misal: folder "UlangTahun").
+         2. Masukkan file foto, musik, dan video ke dalam folder yang sama.
+         3. Ganti atribut `src="..."` pada bagian di bawah ini:
+            - AUDIO : Cari id="bgMusic" -> ganti src="lagu_ultah.mp3"
+            - FOTO  : Cari bagian GALERI FOTO -> ganti src="foto1.jpg", dst.
+            - VIDEO : Cari id="birthdayVideo" -> ganti src="video_ucapan.mp4"
+         ========================================================================= -->
+
+    <!-- ==================== 1. PEMUTAR AUDIO LATAR (BGM) ==================== -->
+    <!-- Ganti src dengan nama file MP3 milikmu (contoh: src="musik-ultah.mp3") -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="Audio/Hindia - everything u are.mp3">
+        Browser kamu tidak mendukung elemen audio.
+    </audio>
+
+    <!-- Tombol Kontrol Musik Mengambang (Pojok Kanan Atas) -->
+    <div id="musicControlContainer" class="fixed top-4 right-4 z-40 hidden">
+        <button id="musicToggleBtn" onclick="toggleMusic()" class="flex items-center gap-3 bg-white/90 backdrop-blur-md border border-emerald-200 shadow-lg hover:shadow-xl px-4 py-2.5 rounded-full transition-all duration-300 group">
+            <div id="eqVisualizer" class="flex items-end gap-1 h-5">
+                <span class="eq-bar w-1 bg-emerald-600 rounded-full"></span>
+                <span class="eq-bar w-1 bg-emerald-600 rounded-full"></span>
+                <span class="eq-bar w-1 bg-emerald-600 rounded-full"></span>
+            </div>
+            <span id="musicStatusText" class="text-xs font-semibold text-emerald-800">Musik: Nyala</span>
+            <i id="musicIcon" data-lucide="pause" class="w-4 h-4 text-emerald-700"></i>
+        </button>
+    </div>
+
+    <!-- ==================== 2. LAYAR PEMBUKA (WELCOME SCREEN) ==================== -->
+    <div id="welcomeScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-emerald-100 via-teal-50 to-amber-50 p-6 text-center transition-all duration-700">
+        <!-- Dekorasi Lingkaran Cahaya Hijau & Emas -->
+        <div class="absolute w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl -top-10 -left-10 pointer-events-none"></div>
+        <div class="absolute w-72 h-72 bg-amber-200/40 rounded-full blur-3xl -bottom-10 -right-10 pointer-events-none"></div>
+
+        <div class="relative z-10 max-w-md w-full bg-white/85 backdrop-blur-md p-8 sm:p-10 rounded-3xl shadow-2xl border border-emerald-100">
+            <div class="w-20 h-20 mx-auto mb-6 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center shadow-inner animate-bounce">
+                <i data-lucide="gift" class="w-10 h-10"></i>
+            </div>
+            
+            <p class="text-xs uppercase tracking-widest text-emerald-600 font-bold mb-2">Ada Pesan Spesial Untukmu</p>
+            <h1 class="font-serif-title text-3xl sm:text-4xl font-bold text-slate-800 mb-3">
+                HAPPY BIRTHDAY SAYANGGGG 🌿
+            </h1>
+            <p class="text-slate-600 text-sm sm:text-base mb-8 leading-relaxed">
+                Hari ini adalah hari yang sangat istimewa
+                Semoga kebaikan selalu menyertaimu,apa yang menjadi wishlistmu bisa tercapai, dan semoga selalu sehat, bahagia, dan sukses selalu. 💚
+            </p>
+            
+            <button onclick="openSurprise()" class="w-full py-4 px-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-2xl shadow-lg shadow-emerald-300/50 hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 text-base">
+                <i data-lucide="sparkles" class="w-5 h-5 text-amber-200"></i>
+                <span>Buka Hadiah Ulang Tahun</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Container Balon Melayang -->
+    <div id="balloonContainer" aria-hidden="true"></div>
+
+    <!-- ==================== KONTEN UTAMA (MUNCUL SETELAH KEJUTAN DIBUKA) ==================== -->
+    <main id="mainContent" class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-16 sm:space-y-24 opacity-0 transition-opacity duration-1000 hidden">
+
+        <!-- BAGIAN 1: HEADER & KARTU UCAPAN EFEK KETIK -->
+        <section class="text-center space-y-6">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100/90 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold">
+                <i data-lucide="party-popper" class="w-4 h-4 text-amber-600"></i>
+                <span>Happy Birthday!</span>
+            </div>
+            
+            <!-- Ganti Nama di Bawah Ini -->
+            <h1 class="font-serif-title text-4xl sm:text-6xl font-bold text-slate-900 leading-tight">
+                Selamat Ulang Tahun Sayangkuuu, <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-600 to-amber-500">WIDARA NOVIA ROSA</span>
+            </h1>
+
+            <!-- Kotak Kartu Ucapan dengan Typewriter Effect -->
+            <div class="max-w-2xl mx-auto bg-white/90 backdrop-blur-md p-6 sm:p-10 rounded-3xl shadow-xl border border-emerald-100 text-left relative">
+                <i data-lucide="quote" class="w-8 h-8 text-emerald-200 absolute top-6 right-6"></i>
+                <p id="typewriterText" class="text-slate-700 text-base sm:text-lg leading-relaxed min-h-[140px] typing-cursor whitespace-pre-line"></p>
+                
+                <div class="mt-6 pt-4 border-t border-emerald-100 flex items-center justify-between text-sm text-slate-500">
+                    <span>Dibuat dengan penuh doa & ketulusan 💚</span>
+                    <button onclick="triggerConfetti()" class="text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> Sebar Confetti
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- BAGIAN 2: KUE ULANG TAHUN INTERAKTIF (TEMA HIJAU - PUTIH - EMAS) -->
+        <section class="bg-white/85 backdrop-blur-md rounded-3xl p-6 sm:p-10 shadow-xl border border-emerald-100 text-center max-w-2xl mx-auto">
+            <h2 class="font-serif-title text-2xl sm:text-3xl font-bold text-slate-800 mb-2">
+                Make a Wish & Tiup Lilinnya! 🎂
+            </h2>
+            <p class="text-slate-600 text-sm sm:text-base mb-8">
+                Pejamkan mata sejenak, panjatkan harapan terbaikmu tahun ini, lalu klik kue atau tombol di bawah untuk meniup lilinnya.
+            </p>
+
+            <!-- Ilustrasi Kue Ulang Tahun SVG (Hijau Sage, Emerald, Putih Krem & Emas) -->
+            <div onclick="blowCandle()" title="Klik untuk meniup lilin" class="cursor-pointer relative w-48 h-48 mx-auto mb-6 flex items-end justify-center group">
+                <svg viewBox="0 0 200 200" class="w-full h-full overflow-visible transform group-hover:scale-105 transition-transform duration-300">
+                    <!-- Api Lilin Emas Hangat (Akan hilang saat ditiup) -->
+                    <g id="candleFlame" class="flame transition-opacity duration-500">
+                        <path d="M100 25 C92 40, 92 52, 100 55 C108 52, 108 40, 100 25 Z" fill="#f59e0b" />
+                        <path d="M100 33 C96 42, 96 50, 100 52 C104 50, 104 42, 100 33 Z" fill="#fef08a" />
+                    </g>
+                    <!-- Asap Lilin (Muncul setelah ditiup) -->
+                    <g id="candleSmoke" class="opacity-0 transition-opacity duration-700">
+                        <path d="M100 52 Q95 40 102 30 T98 12" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" />
+                    </g>
+                    <!-- Batang Lilin Emas & Putih -->
+                    <rect x="95" y="55" width="10" height="35" rx="3" fill="#eab308" />
+                    <path d="M95 62 L105 68 M95 72 L105 78 M95 82 L105 88" stroke="#fefce8" stroke-width="2" />
+                    <!-- Kue Lapis Atas (Hijau Mint Lembut & Krim Emas) -->
+                    <rect x="55" y="90" width="90" height="35" rx="10" fill="#a7f3d0" />
+                    <path d="M55 100 Q66 112 77 100 T100 100 T122 100 T145 100" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" />
+                    <!-- Kue Lapis Bawah (Hijau Emerald & Krim Putih) -->
+                    <rect x="35" y="125" width="130" height="45" rx="12" fill="#059669" />
+                    <path d="M35 138 Q51 150 67 138 T100 138 T132 138 T165 138" fill="none" stroke="#fefce8" stroke-width="6" stroke-linecap="round" />
+                    <!-- Piring Kue Emas Lembut -->
+                    <rect x="20" y="170" width="160" height="10" rx="5" fill="#d97706" opacity="0.8" />
+                </svg>
+            </div>
+
+            <div id="wishMessage" class="hidden mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm font-medium">
+                🎉 Yeayyy Lilin sudah ditiup. Selamat ulang tahun, semoga semua doa dan harapanmu segera terwujud ya sayanggg
+            </div>
+
+            <button id="blowCandleBtn" onclick="blowCandle()" class="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-full shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center gap-2">
+                <i data-lucide="wind" class="w-5 h-5"></i>
+                <span>Tiup Lilin Sekarang</span>
+            </button>
+        </section>
+
+        <!-- BAGIAN 3: GALERI FOTO KENANGAN (BINGKAI POLAROID HIJAU SAGE) -->
+        <section class="space-y-6">
+            <div class="text-center space-y-2">
+                <h2 class="font-serif-title text-3xl sm:text-4xl font-bold text-slate-800">
+                    Galeri Momen Indah 📸
+                </h2>
+                <p class="text-slate-600 text-sm sm:text-base">
+                    Klik pada foto untuk memperbesar dan membaca cerita di baliknya.
+                </p>
+            </div>
+
+            <!-- Grid Foto Polaroid (Ganti atribut src="..." dengan file foto lokal milikmu, misal: src="foto1.jpg") -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                
+                <!-- Foto 1 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/1.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+1'"
+                             alt="Momen Bahagia 1" 
+                             data-caption="Setiap tawa bersamamu adalah kenangan yang paling berharga. 🌿"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Momen Spesial Kita #1</p>
+                </div>
+
+                <!-- Foto 2 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/2.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+2'"
+                             alt="Momen Bahagia 2" 
+                             data-caption="Terima kasih sudah selalu ada dalam suka maupun duka. ✨"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Perjalanan Seru #2</p>
+                </div>
+
+                <!-- Foto 3 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/3.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+3'"
+                             alt="Momen Bahagia 3" 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+
+                <!-- Foto 4 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/4.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+4'"
+                             alt="Momen Bahagia 4" 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+
+                <!-- Foto 5 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/5.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+5'"
+                             alt="Momen Bahagia 5" 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+
+                <!-- Foto 6 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/6.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+6'"
+                             alt="Momen Bahagia 6" 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+
+                <!-- Foto 7 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/7.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+7'"
+                             alt="Momen Bahagia 7" 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+            
+                <!-- Foto 8 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/8.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+8'"
+                             alt="Momen Bahagia 8" 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+
+                <!-- Foto 9 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/9.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+9'"
+                             alt="Momen Bahagia 9" 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+
+                <!-- Foto 10 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/10.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+10'"
+                             alt="Momen Bahagia 10  " 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+
+                <!-- Foto 11 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/11.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+11'"
+                             alt="Momen Bahagia 11  " 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+
+                <!-- Foto 12 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/12.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+12'"
+                             alt="Momen Bahagia 12      " 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+
+                <!-- Foto 13 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/13.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+13'"
+                             alt="Momen Bahagia 13      " 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+
+                <!-- Foto 14 -->
+                <div onclick="openLightbox(this)" class="group cursor-pointer bg-[#f4f7f4] p-3.5 pb-5 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-[#a3b8a3]/50 transform hover:-translate-y-1.5 sm:col-span-2 md:col-span-1">
+                    <div class="overflow-hidden rounded-xl aspect-[4/3] bg-emerald-50">
+                        <img src="FOTO/14.jpg" 
+                             onerror="this.src='https://placehold.co/600x450/d1fae5/065f46?text=Foto+Kenangan+14'"
+                             alt="Momen Bahagia 14      " 
+                             data-caption="Semoga di usia yang baru ini, kedamaian dan kebahagiaan selalu menyertaimu! 🎂"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <p class="mt-3.5 text-sm font-semibold text-emerald-900 text-center truncate">Harapan Baru #3</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- BAGIAN 4: PEMUTAR VIDEO UCAPAN KHUSUS -->
+        <section class="space-y-6">
+            <div class="text-center space-y-2">
+                <h2 class="font-serif-title text-3xl sm:text-4xl font-bold text-slate-800">
+                    Video Ucapan Untukmu 🎬
+                </h2>
+                <p class="text-slate-600 text-sm sm:text-base">
+                    Putar video di bawah ini (musik latar akan otomatis jeda saat video diputar dan lanjut kembali setelahnya).
+                </p>
+            </div>
+
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (1).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (2).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (3).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (4).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+
+                    
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (5).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (6).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (7).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (8).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (9).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (10).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (11).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (12).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (13).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (14).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+                
+                
+            <div class="max-w-3xl mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-200">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shadow-inner">
+                    <!-- Ganti src dengan file video MP4 milikmu (contoh: src="video-ucapan.mp4") -->
+                    <!-- Atribut poster adalah gambar cover/thumbnail sebelum video diputar -->
+                    <video id="birthdayVideo" class="w-full h-full object-cover" controls playsinline poster="https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80">
+                        <source src="VIDEO/1.  (15).mp4" type="video/mp4">
+                        Browser kamu tidak mendukung pemutar video HTML5.
+                    </video>
+                </div>
+            </div>
+        </section>
+
+        <!-- BAGIAN 5: KIRIM HARAPAN / DOA INTERAKTIF -->
+        <section class="max-w-2xl mx-auto bg-white/90 backdrop-blur-md p-6 sm:p-10 rounded-3xl shadow-xl border border-emerald-100">
+            <div class="text-center mb-6">
+                <h2 class="font-serif-title text-2xl sm:text-3xl font-bold text-slate-800 mb-2">
+                    Tulis Harapan & Doamu ✍️
+                </h2>
+                <p class="text-slate-600 text-sm">
+                    Catat keinginan terbesarmu di tahun ini sebagai pengingat indah.
+                </p>
+            </div>
+
+            <form onsubmit="submitWish(event)" class="space-y-4">
+                <textarea id="wishInput" rows="3" required placeholder="Tulis harapanmu di sini... (Contoh: Semoga tahun ini selalu sehat, bahagia, dan impianku tercapai)" class="w-full p-4 rounded-2xl border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/40 text-slate-700 text-sm sm:text-base"></textarea>
+                <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span>Simpan Harapan</span>
+                </button>
+            </form>
+
+            <!-- Daftar Harapan yang Tersimpan -->
+            <div id="wishList" class="mt-6 space-y-3"></div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="text-center text-slate-500 text-sm pt-8 pb-4">
+            <p>Selamat Ulang Tahun Sekali Lagi Sayanggg 🌿✨</p>
+        </footer>
+    </main>
+
+    <!-- ==================== MODAL LIGHTBOX UNTUK FOTO ==================== -->
+    <div id="lightboxModal" onclick="closeLightbox()" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity duration-300">
+        <div onclick="event.stopPropagation()" class="relative max-w-3xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl border-2 border-emerald-200">
+            <button onclick="closeLightbox()" class="absolute top-4 right-4 z-10 w-10 h-10 bg-emerald-950/60 hover:bg-emerald-950/80 text-white rounded-full flex items-center justify-center transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <img id="lightboxImg" src="" alt="Preview Foto" class="w-full max-h-[70vh] object-contain bg-emerald-50/50">
+            <div class="p-5 text-center bg-white border-t border-emerald-100">
+                <p id="lightboxCaption" class="text-emerald-950 font-medium text-base"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT INTERAKTIF ==================== -->
+    <script>
+        // Inisialisasi ikon Lucide
+        lucide.createIcons();
+
+        // Teks ucapan yang akan diketik otomatis (Silakan ubah kalimatnya sesuai keinginan)
+        const birthdayMessage = `Selamat ulang tahun! 🌿✨\n\nDi hari yang spesial ini, aku cuma mau bilang terima kasih sudah hadir dan membawa begitu banyak warna, ketenangan, serta kebahagiaan. Semoga di usia yang baru ini, kamu selalu diberikan kesehatan, kelancaran dalam setiap langkah, dan dikelilingi oleh hal-hal baik.\n\nTetaplah menjadi pribadi yang hangat dan menginspirasi. Selamat merayakan harimu! 💚`;
+
+        const bgMusic = document.getElementById('bgMusic');
+        const birthdayVideo = document.getElementById('birthdayVideo');
+        let isMusicPlaying = false;
+        let wasMusicPlayingBeforeVideo = false;
+
+        // 1. Fungsi Membuka Kejutan (Memicu Audio & Animasi)
+        function openSurprise() {
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            const mainContent = document.getElementById('mainContent');
+            const musicControl = document.getElementById('musicControlContainer');
+
+            // Putar musik latar (Berhasil karena dipicu klik pengguna)
+            bgMusic.volume = 0.6;
+            bgMusic.play().then(() => {
+                isMusicPlaying = true;
+                updateMusicUI();
+            }).catch(err => {
+                console.log("Autoplay dicegah browser:", err);
+                isMusicPlaying = false;
+                updateMusicUI();
+            });
+
+            // Sembunyikan layar pembuka dengan transisi halus
+            welcomeScreen.classList.add('opacity-0', 'pointer-events-none', 'scale-105');
+            setTimeout(() => {
+                welcomeScreen.style.display = 'none';
+            }, 700);
+
+            // Tampilkan konten utama & kontrol musik
+            mainContent.classList.remove('hidden');
+            musicControl.classList.remove('hidden');
+            setTimeout(() => {
+                mainContent.classList.remove('opacity-0');
+                startTypewriter();
+            }, 100);
+
+            // Jalankan Confetti & Balon Melayang
+            triggerConfetti();
+            createBalloons();
+        }
+
+        // 2. Kontrol Play / Pause Musik Latar
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                isMusicPlaying = false;
+            } else {
+                bgMusic.play();
+                isMusicPlaying = true;
+            }
+            updateMusicUI();
+        }
+
+        function updateMusicUI() {
+            const statusText = document.getElementById('musicStatusText');
+            const eqVisualizer = document.getElementById('eqVisualizer');
+            const musicBtn = document.getElementById('musicToggleBtn');
+
+            if (isMusicPlaying) {
+                statusText.textContent = "Musik: Nyala";
+                eqVisualizer.classList.remove('paused');
+                musicBtn.innerHTML = `
+                    <div id="eqVisualizer" class="flex items-end gap-1 h-5">
+                        <span class="eq-bar w-1 bg-emerald-600 rounded-full"></span>
+                        <span class="eq-bar w-1 bg-emerald-600 rounded-full"></span>
+                        <span class="eq-bar w-1 bg-emerald-600 rounded-full"></span>
+                    </div>
+                    <span id="musicStatusText" class="text-xs font-semibold text-emerald-800">Musik: Nyala</span>
+                    <i data-lucide="pause" class="w-4 h-4 text-emerald-700"></i>
+                `;
+            } else {
+                musicBtn.innerHTML = `
+                    <div id="eqVisualizer" class="flex items-end gap-1 h-5 paused">
+                        <span class="eq-bar w-1 bg-slate-400 rounded-full"></span>
+                        <span class="eq-bar w-1 bg-slate-400 rounded-full"></span>
+                        <span class="eq-bar w-1 bg-slate-400 rounded-full"></span>
+                    </div>
+                    <span id="musicStatusText" class="text-xs font-semibold text-slate-600">Musik: Jeda</span>
+                    <i data-lucide="play" class="w-4 h-4 text-slate-600"></i>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        // 3. Sinkronisasi Audio Latar dengan Pemutar Video
+        // Otomatis menjeda musik latar saat video diputar agar audio tidak bertabrakan
+        birthdayVideo.addEventListener('play', () => {
+            if (isMusicPlaying) {
+                wasMusicPlayingBeforeVideo = true;
+                bgMusic.pause();
+                isMusicPlaying = false;
+                updateMusicUI();
+            }
+        });
+
+        // Melanjutkan musik latar saat video dijeda atau selesai
+        birthdayVideo.addEventListener('pause', () => {
+            if (wasMusicPlayingBeforeVideo) {
+                bgMusic.play();
+                isMusicPlaying = true;
+                wasMusicPlayingBeforeVideo = false;
+                updateMusicUI();
+            }
+        });
+
+        birthdayVideo.addEventListener('ended', () => {
+            if (wasMusicPlayingBeforeVideo) {
+                bgMusic.play();
+                isMusicPlaying = true;
+                wasMusicPlayingBeforeVideo = false;
+                updateMusicUI();
+            }
+        });
+
+        // 4. Efek Mesin Ketik (Typewriter)
+        function startTypewriter() {
+            const target = document.getElementById('typewriterText');
+            let index = 0;
+            target.textContent = '';
+
+            function type() {
+                if (index < birthdayMessage.length) {
+                    target.textContent += birthdayMessage.charAt(index);
+                    index++;
+                    setTimeout(type, 35); // Kecepatan ketik (ms)
+                } else {
+                    target.classList.remove('typing-cursor');
+                }
+            }
+            type();
+        }
+
+        // 5. Efek Confetti Meriah (Nuansa Hijau Emerald, Mint & Emas)
+        function triggerConfetti() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#059669', '#10b981', '#34d399', '#f59e0b', '#fef08a']
+            });
+        }
+
+        // 6. Efek Balon Melayang di Latar Belakang (Hijau Sage, Emerald & Emas Lembut)
+        function createBalloons() {
+            const container = document.getElementById('balloonContainer');
+            const colors = ['#6ee7b7', '#10b981', '#fcd34d', '#86efac', '#a7f3d0'];
+            
+            for (let i = 0; i < 12; i++) {
+                const balloon = document.createElement('div');
+                balloon.className = 'balloon';
+                const color = colors[i % colors.length];
+                const left = Math.random() * 95;
+                const duration = 12 + Math.random() * 10;
+                const delay = Math.random() * 8;
+                const size = 35 + Math.random() * 25;
+
+                balloon.style.left = `${left}vw`;
+                balloon.style.animationDuration = `${duration}s`;
+                balloon.style.animationDelay = `${delay}s`;
+                balloon.innerHTML = `
+                    <svg width="${size}" height="${size * 1.2}" viewBox="0 0 50 60">
+                        <ellipse cx="25" cy="22" rx="20" ry="22" fill="${color}" opacity="0.6"/>
+                        <path d="M25 44 L22 48 L28 48 Z" fill="${color}" opacity="0.6"/>
+                        <path d="M25 48 Q22 54 25 60" stroke="${color}" stroke-width="1.5" fill="none" opacity="0.6"/>
+                    </svg>
+                `;
+                container.appendChild(balloon);
+            }
+        }
+
+        // 7. Fitur Interaktif Tiup Lilin
+        let candleBlown = false;
+        function blowCandle() {
+            if (candleBlown) return;
+            candleBlown = true;
+
+            const flame = document.getElementById('candleFlame');
+            const smoke = document.getElementById('candleSmoke');
+            const wishMsg = document.getElementById('wishMessage');
+            const btn = document.getElementById('blowCandleBtn');
+
+            // Padamkan api & munculkan asap
+            flame.classList.add('opacity-0');
+            smoke.classList.remove('opacity-0');
+            
+            // Tampilkan pesan ucapan & confetti
+            wishMsg.classList.remove('hidden');
+            btn.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i><span>Lilin Sudah Ditiup!</span>`;
+            btn.classList.replace('bg-amber-500', 'bg-emerald-500');
+            btn.classList.replace('hover:bg-amber-600', 'hover:bg-emerald-600');
+            lucide.createIcons();
+            
+            triggerConfetti();
+        }
+
+        // 8. Fitur Lightbox Galeri Foto
+        function openLightbox(cardElement) {
+            const img = cardElement.querySelector('img');
+            const modal = document.getElementById('lightboxModal');
+            const modalImg = document.getElementById('lightboxImg');
+            const modalCaption = document.getElementById('lightboxCaption');
+
+            modalImg.src = img.src;
+            modalCaption.textContent = img.getAttribute('data-caption') || img.alt;
+            modal.classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightboxModal').classList.add('hidden');
+        }
+
+        // 9. Fitur Simpan Harapan / Doa
+        function submitWish(event) {
+            event.preventDefault();
+            const input = document.getElementById('wishInput');
+            const wishList = document.getElementById('wishList');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            const wishCard = document.createElement('div');
+            wishCard.className = 'p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-slate-700 text-sm flex items-start gap-3 animate-fade-in';
+            wishCard.innerHTML = `
+                <span class="text-lg">🌿</span>
+                <p class="leading-relaxed">${escapeHTML(text)}</p>
+            `;
+
+            wishList.prepend(wishCard);
+            input.value = '';
+            triggerConfetti();
+        }
+
+        // Mencegah XSS pada input teks
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag]));
+        }
+    </script>
+</body>
+</html>
